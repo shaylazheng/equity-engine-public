@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Engine Explorer (mock)</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
   color-scheme:light;
@@ -163,7 +162,7 @@ textarea{width:100%;max-width:100%;min-height:260px;font-family:"IBM Plex Mono",
 @media (max-width:700px){.mockbar{flex-direction:column;gap:6px}}
 </style>
 </head><body>
-<div class="mockbar" role="note"><span class="tag">MOCK</span><span>This is a static preview of the Engine Explorer, not the engine. Every number is the fitted result recorded in the repo's <code>docs/</code> on 2026-09-08. Toggles recompute in-browser approximations and run nothing. Source: <a href="https://github.com/shaylazheng/equity-engine">github.com/shaylazheng/equity-engine</a> (private).</span></div>
+<div class="mockbar" role="note"><span class="tag">MOCK</span><span>This is a static preview of the Engine Explorer, not the engine. This presentation contains recorded research summaries from 2026-09-08, not a live backtest. Toggles recompute in-browser approximations and run nothing. Source: <a href="https://github.com/shaylazheng/equity-engine-public">github.com/shaylazheng/equity-engine-public</a>.</span></div>
 <div class="top">
   <div class="brand"><h1>Engine Explorer</h1><small>F5 · include / exclude · what changes</small></div>
   <div class="tabs" role="tablist" id="tabs">
@@ -250,7 +249,7 @@ textarea{width:100%;max-width:100%;min-height:260px;font-family:"IBM Plex Mono",
       <div class="banner warn"><span class="k">honest</span><span>The scripts do not read this config yet. <span class="mono">go_no_go.py</span> takes no arguments, <span class="mono">real_backtest.py</span> takes only <span class="mono">--risk-profile</span>, and <span class="mono">sweep_risk_appetite.py</span> takes <span class="mono">--profiles</span>. Wiring a <span class="mono">--config</span> flag to this file is the code change that would make the selections below executable. Until then the config is a written-down decision, which is still the right order: decide, then run.</span></div>
       <div class="grid2">
         <div class="panel">
-          <h2>Commands this selection implies</h2>
+          <h2>Historical private-workspace commands</h2><p>These reference scripts belong to the private research workspace and are not shipped here. For the runnable public example, use <code>uv run python scripts/demo.py</code>. The controls below describe a configuration; they do not execute it.</p>
           <pre id="plan-cmds"></pre>
           <div class="note" id="plan-needs"></div>
         </div>
