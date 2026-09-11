@@ -1,5 +1,7 @@
 # Equity Alpha Engine — public edition
 
+**[Open the interactive mock website](https://shaylazheng.github.io/equity-engine-public/mock/)**
+
 **[Download the interactive Engine Explorer HTML](https://github.com/shaylazheng/equity-engine-public/raw/refs/heads/main/mock/index.html)** · [View its source](mock/index.html)
 
 [![Engine Explorer mock preview](docs/images/engine-explorer.png)](mock/index.html)
