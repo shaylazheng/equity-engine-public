@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Engine Explorer (mock)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --ground:#f1f4f7; --surface:#ffffff; --surface-2:#e9edf2; --surface-3:#dfe5ec;
+  --ink:#141a22; --ink-2:#4f5b67; --ink-3:#8791a0; --rule:#d5dbe3; --rule-2:#e7ebf0;
+  --accent:#1f3a5f; --accent-ink:#ffffff; --accent-bg:#e3ebf5;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#1f8a3b; --warn:#b47a00; --crit:#c2352f;
+  --good-bg:#e5f4e9; --warn-bg:#fbf1d9; --crit-bg:#fae4e2;
+  --shadow:0 1px 2px rgba(20,26,34,.06),0 6px 20px -12px rgba(20,26,34,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0f1419; --surface:#171d25; --surface-2:#1f2731; --surface-3:#28323d;
+    --ink:#eef1f5; --ink-2:#aab4bf; --ink-3:#74808d; --rule:#2c3640; --rule-2:#232c36;
+    --accent:#7fa9dd; --accent-ink:#0f1419; --accent-bg:#1c2a3c;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+    --good:#4fc26e; --warn:#e0b04a; --crit:#ef7069;
+    --good-bg:#17301f; --warn-bg:#332a12; --crit-bg:#3a1e1c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0f1419; --surface:#171d25; --surface-2:#1f2731; --surface-3:#28323d;
+  --ink:#eef1f5; --ink-2:#aab4bf; --ink-3:#74808d; --rule:#2c3640; --rule-2:#232c36;
+  --accent:#7fa9dd; --accent-ink:#0f1419; --accent-bg:#1c2a3c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70;
+  --good:#4fc26e; --warn:#e0b04a; --crit:#ef7069;
+  --good-bg:#17301f; --warn-bg:#332a12; --crit-bg:#3a1e1c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:Archivo,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:17px;font-stretch:90%}
+h2{font-size:16px}
+h3{font-size:12px;color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-weight:500;letter-spacing:.07em;text-transform:uppercase}
+p{margin:0}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* top bar, like the platform's grouped nav */
+.top{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:22px;padding:0 20px;height:50px}
+.top .brand{display:flex;align-items:baseline;gap:10px}
+.top .brand small{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.tabs{display:flex;gap:2px;height:100%}
+.tab{padding:0 12px;height:100%;border-bottom:2px solid transparent;color:var(--ink-2);font-weight:500;display:flex;align-items:center;gap:7px}
+.tab .n{font-family:"IBM Plex Mono",monospace;font-size:11px;background:var(--surface-2);padding:1px 6px;border-radius:9px;color:var(--ink-2)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{font-size:12.5px;padding:6px 11px;border:1px solid var(--rule);border-radius:5px;background:var(--surface);color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+/* layout */
+.main{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 50px)}
+.rail{border-right:1px solid var(--rule);background:var(--surface);padding:18px 16px 40px;overflow-y:auto;max-height:calc(100vh - 50px);position:sticky;top:50px}
+.content{padding:22px 26px 60px;min-width:0}
+.view{display:none}.view.on{display:block}
+.rail .group{margin-bottom:20px}
+.rail .group-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.rail .group-head .ops{display:flex;gap:8px}
+.rail .group-head .ops button{font-size:11px;color:var(--accent);font-family:"IBM Plex Mono",monospace}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:6px 6px;border-radius:5px}
+.row:hover{background:var(--surface-2)}
+.row .lbl{font-size:13px;line-height:1.25}
+.row .lbl small{display:block;color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:10.5px;margin-top:1px}
+.row .side{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.row.off .lbl{color:var(--ink-3)}
+/* switch */
+.sw{display:inline-block;vertical-align:middle;position:relative;width:32px;height:18px;background:var(--surface-3);border-radius:9px;transition:background .12s;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .12s}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"]::after{transform:translateX(14px)}
+.sw.warnish[aria-checked="true"]{background:var(--warn)}
+/* content bits */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-bottom:18px}
+.tile{background:var(--surface);padding:12px 14px}
+.tile .v{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;line-height:1.1;letter-spacing:-.02em}
+.tile .l{font-size:12px;color:var(--ink-2);margin-top:4px}
+.tile .v.go{color:var(--good)}.tile .v.bad{color:var(--s2)}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px}
+.panel .sub{color:var(--ink-2);font-size:13px;max-width:72ch;margin-top:3px}
+.panel .note{font-size:12.5px;color:var(--ink-2);margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule);max-width:76ch}
+.panel .note b,.sub b{color:var(--ink);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid2>*{min-width:0}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:14px}
+.banner.warn{background:var(--warn-bg);color:var(--ink)}
+.banner.crit{background:var(--crit-bg);color:var(--ink)}
+.banner.good{background:var(--good-bg);color:var(--ink)}
+.banner .k{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--surface);flex:none;margin-top:1px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--rule-2);vertical-align:middle}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.off td{color:var(--ink-3)}
+tr.off td .pill{opacity:.5}
+.tblwrap{overflow-x:auto;margin-top:8px}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.05em;padding:2px 7px;border-radius:3px;font-weight:600;white-space:nowrap}
+.pill.go{background:var(--good-bg);color:var(--good)}
+.pill.no{background:var(--surface-2);color:var(--ink-3)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.pill.info{background:var(--accent-bg);color:var(--accent)}
+.bar{height:8px;background:var(--surface-2);border-radius:2px;position:relative;min-width:90px;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;left:0;background:var(--s1);border-radius:2px}
+.bar i.go{background:var(--s3)}.bar i.fail{background:var(--ink-3)}
+.bar b{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--ink-2);border-left:1px dashed var(--ink-2)}
+.fail-x{color:var(--crit);font-weight:600}
+/* assumption cards */
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card .head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card .head h2{font-size:14.5px}
+.card .weak{font-size:12.5px;color:var(--ink-2)}
+.card .weak b{color:var(--ink);font-weight:600}
+.ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.seg button{padding:5px 10px;font-size:12.5px;color:var(--ink-2);border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:180px;accent-color:var(--accent)}
+input[type=number]{font:inherit;font-family:"IBM Plex Mono",monospace;width:96px;padding:4px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--surface);color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px;color:var(--ink-2)}
+.kv dt{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);padding-top:2px}
+.kv dd{margin:0}
+.result{background:var(--surface-2);border-radius:6px;padding:12px 14px;margin-top:4px}
+.result .big{font-family:"IBM Plex Mono",monospace;font-size:26px;font-weight:600;letter-spacing:-.02em}
+.result .big small{font-size:12px;color:var(--ink-2);font-weight:400;margin-left:8px;font-family:Archivo,sans-serif}
+.result .rowline{display:flex;gap:18px;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2);margin-top:6px}
+pre{margin:0;background:var(--surface-2);border-radius:6px;padding:12px 14px;font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+textarea{width:100%;max-width:100%;min-height:260px;font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--surface-2);color:var(--ink);border:1px solid var(--rule);border-radius:6px;padding:10px;resize:vertical}
+.list{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2)}
+.list li b{color:var(--ink);font-weight:600}
+.preview h2{margin-bottom:6px}
+.preview .sec{margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--rule-2)}
+.preview .sec:last-child{border-bottom:0}
+.preview .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:4px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:8px 14px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .15s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:980px){
+  .main{grid-template-columns:1fr}
+  .rail{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--rule)}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .grid2,.cards{grid-template-columns:1fr}
+  .tab .n{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<style>
+.mockbar{background:#7a1f1a;color:#fff;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.45;padding:9px 20px;display:flex;gap:12px;align-items:flex-start}
+.mockbar .tag{background:#fff;color:#7a1f1a;font-weight:600;letter-spacing:.08em;padding:1px 7px;border-radius:3px;flex:none;margin-top:1px}
+.mockbar a{color:#fff;text-decoration:underline}
+@media (max-width:700px){.mockbar{flex-direction:column;gap:6px}}
+</style>
+</head><body>
+<div class="mockbar" role="note"><span class="tag">MOCK</span><span>This is a static preview of the Engine Explorer, not the engine. Every number is the fitted result recorded in the repo's <code>docs/</code> on 2026-09-08. Toggles recompute in-browser approximations and run nothing. Source: <a href="https://github.com/shaylazheng/equity-engine">github.com/shaylazheng/equity-engine</a> (private).</span></div>
+<div class="top">
+  <div class="brand"><h1>Engine Explorer</h1><small>F5 · include / exclude · what changes</small></div>
+  <div class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-view="signals" aria-selected="true">Signals <span class="n" id="n-signals"></span></button>
+    <button class="tab" role="tab" data-view="factors">Risk factors <span class="n" id="n-factors"></span></button>
+    <button class="tab" role="tab" data-view="assumptions">Assumptions <span class="n" id="n-assump"></span></button>
+    <button class="tab" role="tab" data-view="sections">Sections <span class="n" id="n-sections"></span></button>
+    <button class="tab" role="tab" data-view="plan">Run plan</button>
+  </div>
+  <div class="right">
+    <button class="btn" id="reset">Reset to shipped</button>
+    <button class="btn primary" id="copy">Copy config</button>
+  </div>
+</div>
+
+<div class="main">
+  <aside class="rail" id="rail"></aside>
+  <div class="content">
+
+    <!-- SIGNALS -->
+    <div class="view on" data-view="signals">
+      <div class="tiles">
+        <div class="tile"><div class="v" id="t-n"></div><div class="l">signals included, each a recorded trial</div></div>
+        <div class="tile"><div class="v go" id="t-go"></div><div class="l">clear the gate at the current thresholds</div></div>
+        <div class="tile"><div class="v" id="t-star"></div><div class="l">expected max Sharpe from luck alone (annualized)</div></div>
+        <div class="tile"><div class="v" id="t-var"></div><div class="l">cross-trial Sharpe variance, per period</div></div>
+      </div>
+      <div id="sig-banners"></div>
+      <div class="panel">
+        <h2>Gate, recomputed for this selection</h2>
+        <p class="sub">Residual t and retention are from the fitted run in <span class="mono">docs/go_no_go.md</span>. Deflated Sharpe is recomputed here against the number of signals you include: fewer trials means a lower bar. Excluding the <span class="mono">momentum</span> or <span class="mono">value</span> factor on the Risk factors tab swaps in the ex-own-factor numbers.</p>
+        <div class="tblwrap"><table id="sig-table"></table></div>
+        <p class="note"><b>The DSR here is an approximation.</b> It assumes normal residual spreads (no skew or excess kurtosis) and a common 640-month sample, and reproduces the documented values to within about 0.04. The number that counts comes from <span class="mono">scripts/go_no_go.py</span>. Changing the threshold after seeing this table is the thing the worklog warns against, so any threshold you settle on here should be written into the script <i>before</i> the next fitted run.</p>
+      </div>
+    </div>
+
+    <!-- FACTORS -->
+    <div class="view" data-view="factors">
+      <div id="fac-banners"></div>
+      <div class="grid2">
+        <div class="panel">
+          <h2>Fitted factor premia, 1972-01 to 2025-12</h2>
+          <p class="sub">Cross-sectional model, exposures lagged one month, 648 monthly fits, median 3,708 names, mean R² 0.106. Industries are constrained to sum to zero rather than dropped.</p>
+          <div class="tblwrap"><table id="fac-table"></table></div>
+        </div>
+        <div class="panel">
+          <h2>What excluding a factor does</h2>
+          <ul class="list">
+            <li><b>momentum or value:</b> a signal that loads on that style is no longer regressed on itself. The gate table switches to the ex-own column: momentum retention 33% → 98%, sales-to-price 44% → 68%, earnings yield 66% → 57%.</li>
+            <li><b>market:</b> the level of the market has nowhere to live in the fit, and a long-only book's dominant risk goes unmodelled. The optimizer will confidently concentrate on whatever the misfit calls safe.</li>
+            <li><b>beta, size, or an industry:</b> no precomputed result. The whole model must be re-fitted with <span class="mono">scripts/fit_risk_model.py</span> and the gate re-run.</li>
+            <li><b>The structural point:</b> a factor cannot be both risk and alpha. Taking momentum out of the risk model is not a free upgrade for the momentum signal. It is a claim that momentum is an anomaly rather than a compensated risk, and that claim is what would need defending.</li>
+          </ul>
+          <div class="note" id="fac-effect"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSUMPTIONS -->
+    <div class="view" data-view="assumptions">
+      <div id="as-banners"></div>
+      <div class="grid2" style="margin-bottom:18px">
+        <div class="panel" style="margin:0">
+          <h2>Result under these assumptions</h2>
+          <p class="sub">Shows the fitted run that matches the current settings, if one exists. Anything without a match needs a run, and the Run plan tab lists it.</p>
+          <div class="result" id="as-result"></div>
+        </div>
+        <div class="panel" style="margin:0">
+          <h2>Profile parameters</h2>
+          <p class="sub">The one dial. Trade cost and score IC are held constant across profiles on purpose: they are facts about the world, not preferences.</p>
+          <dl class="kv" id="as-profile"></dl>
+        </div>
+      </div>
+      <div class="cards" id="as-cards"></div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div class="view" data-view="sections">
+      <div class="panel preview" id="preview"></div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="view" data-view="plan">
+      <div class="banner warn"><span class="k">honest</span><span>The scripts do not read this config yet. <span class="mono">go_no_go.py</span> takes no arguments, <span class="mono">real_backtest.py</span> takes only <span class="mono">--risk-profile</span>, and <span class="mono">sweep_risk_appetite.py</span> takes <span class="mono">--profiles</span>. Wiring a <span class="mono">--config</span> flag to this file is the code change that would make the selections below executable. Until then the config is a written-down decision, which is still the right order: decide, then run.</span></div>
+      <div class="grid2">
+        <div class="panel">
+          <h2>Commands this selection implies</h2>
+          <pre id="plan-cmds"></pre>
+          <div class="note" id="plan-needs"></div>
+        </div>
+        <div class="panel">
+          <h2>Config</h2>
+          <p class="sub">Saved in this browser as you change things. Copy it into <span class="mono">configs/explorer/&lt;name&gt;.yaml</span> when a selection is worth keeping, so it gets a config hash and a trial record.</p>
+          <textarea id="plan-json" readonly spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+/* ------------------------------------------------------------------ data */
+// key, label, family, expected sign, own style factor, raw/mo, raw t, resid/mo, resid t, retained, ex-own retained, ex-own t, ann Sharpe, sign ok
+const SIGNALS=[
+ ["momentum_12_1","Momentum 12-1","price",+1,"momentum",1.24,4.08,0.41,4.96,33,98,7.53,0.68,true],
+ ["earnings_yield","Earnings yield","value",+1,"value",1.50,5.93,0.98,8.04,66,57,6.76,1.10,true],
+ ["accruals","Accruals (balance-sheet)","investment",-1,null,-0.54,-4.17,-0.72,-6.99,132,132,-6.99,0.98,true],
+ ["cash_flow_to_price","Cash flow to price","value",+1,"value",1.56,6.53,1.18,9.36,75,75,8.83,1.28,true],
+ ["sales_to_price","Sales to price","value",+1,"value",1.54,6.24,0.68,6.34,44,68,8.41,0.86,true],
+ ["short_term_reversal","Short-term reversal","price",+1,null,2.10,8.01,2.70,13.36,129,129,13.36,1.82,true],
+ ["long_term_reversal","Long-term reversal","price",+1,null,0.32,1.33,-0.04,-0.31,11,11,-0.31,-0.04,false],
+ ["roa","ROA","quality",+1,null,1.43,5.60,1.09,8.92,76,76,8.92,1.21,true],
+ ["roe","ROE","quality",+1,null,1.48,5.94,0.35,3.27,24,24,3.27,0.45,true],
+ ["asset_turnover","Asset turnover","quality",+1,null,0.95,5.57,0.84,8.05,88,88,8.05,1.10,true],
+ ["roa_change","ROA change","quality",+1,null,1.20,10.16,0.99,10.85,83,83,10.85,1.52,true],
+ ["asset_growth","Asset growth","investment",-1,null,-0.75,-4.00,-0.53,-4.13,71,71,-4.13,0.58,true],
+ ["net_operating_assets","Net operating assets","investment",-1,null,-0.69,-5.50,-0.76,-6.84,109,109,-6.84,0.96,true],
+ ["net_share_issuance","Net share issuance","investment",-1,null,-0.84,-5.97,-0.41,-4.14,50,50,-4.14,0.58,true],
+ ["sales_growth","Sales growth","investment",-1,null,0.48,3.48,0.33,2.45,70,70,2.45,-0.34,false],
+ ["cash_to_assets","Cash to assets","quality",+1,null,0.37,1.78,0.59,5.70,158,158,5.70,0.78,true],
+ ["leverage","Leverage","quality",-1,null,-0.29,-1.73,-0.11,-1.08,40,40,-1.08,0.15,true],
+ ["current_ratio","Current ratio","quality",+1,null,0.62,3.67,-0.13,-0.97,21,21,-0.97,-0.13,false],
+ ["sue","SUE (earnings surprise)","earnings",+1,null,1.40,12.58,1.26,17.63,90,90,17.63,2.47,true],
+ ["earnings_volatility","Earnings volatility","quality",-1,null,-0.42,-1.31,-0.19,-1.92,45,45,-1.92,0.27,true],
+].map(r=>({key:r[0],label:r[1],family:r[2],sign:r[3],self:r[4],raw:r[5],rawT:r[6],res:r[7],resT:r[8],ret:r[9],exRet:r[10],exT:r[11],sharpe:r[12],signOk:r[13]}));
+const FAMILIES={price:"Price",value:"Value",quality:"Quality",investment:"Investment",earnings:"Earnings"};
+
+const FACTORS=[
+ ["market","Market","style",13.55,4.82],["beta","Beta","style",-0.64,-0.65],["size","Size","style",-0.51,-0.82],
+ ["value","Value","style",3.47,6.97],["momentum","Momentum","style",4.49,7.10],
+ ["ind_NoDur","NoDur","industry",null,null],["ind_Durbl","Durbl","industry",null,null],["ind_Manuf","Manuf","industry",null,null],
+ ["ind_Enrgy","Enrgy","industry",null,null],["ind_Chems","Chems","industry",null,null],["ind_BusEq","BusEq","industry",null,null],
+ ["ind_Telcm","Telcm","industry",null,null],["ind_Utils","Utils","industry",null,null],["ind_Shops","Shops","industry",null,null],
+ ["ind_Hlth","Hlth","industry",null,null],["ind_Other","Other","industry",null,null],
+].map(r=>({key:r[0],label:r[1],kind:r[2],ann:r[3],t:r[4]}));
+
+const PROFILES={
+ conservative:{risk_aversion:20,max_weight:0.04,max_active_share:0.40,universe_size:300,n_positions:60,beta_premium_annual:0.0},
+ balanced:{risk_aversion:8,max_weight:0.06,max_active_share:0.60,universe_size:200,n_positions:40,beta_premium_annual:0.0},
+ aggressive:{risk_aversion:4,max_weight:0.09,max_active_share:0.80,universe_size:120,n_positions:25,beta_premium_annual:0.015},
+ max_growth:{risk_aversion:2,max_weight:0.15,max_active_share:0.95,universe_size:60,n_positions:15,beta_premium_annual:0.030},
+};
+// fitted runs. keys: construction, costs, tax, taxAware, profile
+const RUNS=[
+ {c:"equal",costs:false,tax:false,ta:false,p:"balanced",name:"equal weight, gross",cagr:11.52,vol:19.9,sh:0.65,dd:-71.8,to:11.6,final:null},
+ {c:"equal",costs:true,tax:false,ta:false,p:"balanced",name:"equal weight, net of costs",cagr:-2.21,vol:19.7,sh:-0.01,dd:-91.9,to:9.2,final:null},
+ {c:"opt",costs:true,tax:false,ta:false,p:"balanced",name:"optimizer, net of costs",cagr:6.94,vol:15.3,sh:0.52,dd:-52.8,to:1.2,final:null},
+ {c:"opt",costs:true,tax:true,ta:false,p:"balanced",name:"optimizer, net of costs and tax",cagr:6.34,vol:15.3,sh:0.48,dd:-53.0,to:1.2,final:null},
+ {c:"opt",costs:true,tax:true,ta:true,p:"balanced",name:"balanced, tax-aware construction",cagr:6.31,vol:15.7,sh:0.47,dd:-55.9,to:1.3,final:2250923,beta:-0.69,names:118,cost:607909,taxp:139399},
+ {c:"opt",costs:true,tax:true,ta:true,p:"conservative",name:"conservative",cagr:5.81,vol:12.9,sh:0.50,dd:-42.5,to:0.9,final:1773939,beta:-0.94,names:141,cost:286820,taxp:48024},
+ {c:"opt",costs:true,tax:true,ta:true,p:"aggressive",name:"aggressive",cagr:5.73,vol:20.7,sh:0.37,dd:-65.6,to:1.8,final:1705345,beta:0.06,names:96,cost:997066,taxp:221172},
+ {c:"opt",costs:true,tax:true,ta:true,p:"max_growth",name:"max growth",cagr:3.23,vol:25.9,sh:0.25,dd:-75.7,to:2.5,final:503437,beta:1.12,names:57,cost:799981,taxp:160800},
+];
+const SECTIONS=[
+ ["pipeline","Pipeline","the ten packages and what flows between them"],
+ ["invariants","Three invariants","PIT contract, attribution ledger, trial registry"],
+ ["ladder","Gross-to-net ladder","the five backtest rungs"],
+ ["profiles","Risk appetite sweep","four profiles, book beta, drawdown"],
+ ["gate","Go/no-go gate","per-signal residual t and DSR"],
+ ["pit","PIT-broken check","honest vs leaked fundamentals"],
+ ["riskmodel","Risk model","factor premia and the timing diagnostic"],
+ ["status","Status","built, unverified, blocked"],
+];
+const BACKTESTED=["earnings_yield","accruals"]; // scripts/real_backtest.py GO_SIGNALS
+
+/* ------------------------------------------------------------------ state */
+const KEY="qe-explorer-v1";
+function defaults(){
+  const s={signals:{},factors:{},gate:{minT:2.5,minRet:40,minDsr:0.95},
+    assumptions:{profile:"balanced",construction:"opt",costs:true,tax:true,taxAware:true,income:20000,rebalance:"monthly",tradeCostBps:50,startYear:1975,composite:"backtested"},
+    sections:{},view:"signals"};
+  SIGNALS.forEach(x=>s.signals[x.key]=true);FACTORS.forEach(x=>s.factors[x.key]=true);SECTIONS.forEach(x=>s.sections[x[0]]=true);
+  return s;
+}
+let state=defaults();
+try{const raw=localStorage.getItem(KEY);if(raw){const j=JSON.parse(raw);state={...state,...j,signals:{...state.signals,...(j.signals||{})},factors:{...state.factors,...(j.factors||{})},gate:{...state.gate,...(j.gate||{})},assumptions:{...state.assumptions,...(j.assumptions||{})},sections:{...state.sections,...(j.sections||{})}};}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+/* ------------------------------------------------------------------ math */
+const G=0.5772156649;
+function erf(x){const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+0.3275911*x);const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
+function ncdf(z){return 0.5*(1+erf(z/Math.SQRT2));}
+function nppf(p){ // Acklam
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl=0.02425,ph=1-pl;let q,r;
+  if(p<pl){q=Math.sqrt(-2*Math.log(p));return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  if(p<=ph){q=p-0.5;r=q*q;return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  q=Math.sqrt(-2*Math.log(1-p));return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+}
+const N_OBS=640;
+function compute(){
+  const inc=SIGNALS.filter(s=>state.signals[s.key]);
+  const srp=inc.map(s=>s.sharpe/Math.sqrt(12));
+  const n=srp.length;
+  const mean=n?srp.reduce((a,b)=>a+b,0)/n:0;
+  const v=n>1?srp.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(n-1):0;
+  const N=Math.max(n,2);
+  const star=Math.sqrt(v)*((1-G)*nppf(1-1/N)+G*nppf(1-1/(N*Math.E)));
+  const rows=SIGNALS.map(s=>{
+    const exOwn=s.self&&!state.factors[s.self];
+    const ret=exOwn?s.exRet:s.ret, t=exOwn?s.exT:s.resT;
+    const sr=s.sharpe/Math.sqrt(12);
+    const dsr=ncdf((sr-star)*Math.sqrt(N_OBS-1)/Math.sqrt(1+0.5*sr*sr));
+    const on=!!state.signals[s.key];
+    const tOk=Math.abs(t)>=state.gate.minT, rOk=ret>=state.gate.minRet, dOk=dsr>=state.gate.minDsr;
+    return {...s,on,exOwn,ret,t,dsr:on?dsr:null,tOk,rOk,dOk,go:on&&s.signOk&&tOk&&rOk&&dOk};
+  });
+  return {rows,n,v,star,starAnn:star*Math.sqrt(12),go:rows.filter(r=>r.go)};
+}
+function matchRun(){
+  const a=state.assumptions;
+  return RUNS.find(r=>r.c===a.construction&&r.costs===a.costs&&r.tax===a.tax&&(r.c==="equal"||r.ta===a.taxAware)&&(r.c==="equal"||r.p===a.profile))||null;
+}
+function deviations(){
+  const a=state.assumptions,d=[];
+  if(a.income!==20000)d.push(`ordinary income $${a.income.toLocaleString()} (fitted: $20,000)`);
+  if(a.rebalance!=="monthly")d.push(`${a.rebalance} rebalance (fitted: monthly)`);
+  if(a.tradeCostBps!==50)d.push(`optimizer trade cost ${a.tradeCostBps} bp (fitted: 50 bp)`);
+  if(a.startYear!==1975)d.push(`start ${a.startYear} (fitted: 1975)`);
+  if(!a.tax&&a.taxAware)d.push("tax-aware construction with tax off is contradictory");
+  return d;
+}
+
+/* ------------------------------------------------------------------ render helpers */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f2=(v,d=2)=>(v<0?"−":"")+Math.abs(v).toFixed(d);
+function sw(on,cls){return `<span class="sw ${cls||""}" role="switch" aria-checked="${on}" tabindex="0"></span>`;}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1600);}
+
+/* ------------------------------------------------------------------ rail */
+function renderRail(){
+  const v=state.view,rail=$("#rail");let h="";
+  if(v==="signals"){
+    for(const fam of Object.keys(FAMILIES)){
+      const list=SIGNALS.filter(s=>s.family===fam);
+      h+=`<div class="group"><div class="group-head"><h3>${FAMILIES[fam]}</h3><div class="ops"><button data-fam="${fam}" data-set="1">all</button><button data-fam="${fam}" data-set="0">none</button></div></div>`;
+      for(const s of list){const on=state.signals[s.key];h+=`<div class="row ${on?"":"off"}" data-sig="${s.key}">${sw(on)}<div class="lbl">${esc(s.label)}<small>${s.key}${s.self?" · loads on "+s.self:""}</small></div><div class="side">t ${f2(s.resT,1)}</div></div>`;}
+      h+=`</div>`;
+    }
+    h+=`<div class="group"><div class="group-head"><h3>Gate thresholds</h3></div>
+      <div class="row"><span></span><div class="lbl">residual |t| ≥<small>fixed at 2.5, above 1.96 on purpose</small></div><input type="number" step="0.1" min="0" data-gate="minT" value="${state.gate.minT}"></div>
+      <div class="row"><span></span><div class="lbl">retention ≥ %<small>share of raw spread kept after neutralization</small></div><input type="number" step="5" min="0" max="200" data-gate="minRet" value="${state.gate.minRet}"></div>
+      <div class="row"><span></span><div class="lbl">DSR ≥<small>the open question: fixed at 3 trials, now 20</small></div><input type="number" step="0.01" min="0" max="1" data-gate="minDsr" value="${state.gate.minDsr}"></div>
+    </div>`;
+  } else if(v==="factors"){
+    for(const kind of ["style","industry"]){
+      h+=`<div class="group"><div class="group-head"><h3>${kind==="style"?"Market and styles":"FF12 industries (Money eliminated by constraint)"}</h3><div class="ops"><button data-fkind="${kind}" data-set="1">all</button><button data-fkind="${kind}" data-set="0">none</button></div></div>`;
+      for(const f of FACTORS.filter(x=>x.kind===kind)){const on=state.factors[f.key];h+=`<div class="row ${on?"":"off"}" data-fac="${f.key}">${sw(on,f.key==="market"?"warnish":"")}<div class="lbl">${esc(f.label)}<small>${f.key}</small></div><div class="side">${f.ann==null?"":f2(f.ann)+"%/yr"}</div></div>`;}
+      h+=`</div>`;
+    }
+  } else if(v==="assumptions"){
+    h+=`<div class="group"><div class="group-head"><h3>How to read this tab</h3></div><p style="font-size:12.5px;color:var(--ink-2);padding:0 6px">Every card is one thing the fitted result assumes. Precomputed choices show their number immediately. Anything else is honest about needing a run. The cards marked <span class="pill warn">weak</span> are the ones the project's own docs flag as unverified.</p></div>`;
+    h+=`<div class="group"><div class="group-head"><h3>Fitted runs on file</h3></div>`;
+    for(const r of RUNS){h+=`<div class="row"><span></span><div class="lbl">${esc(r.name)}</div><div class="side">${f2(r.cagr)}%</div></div>`;}
+    h+=`</div>`;
+  } else if(v==="sections"){
+    h+=`<div class="group"><div class="group-head"><h3>Overview sections</h3><div class="ops"><button data-seckind="1" data-set="1">all</button><button data-seckind="1" data-set="0">none</button></div></div>`;
+    for(const [k,l,d] of SECTIONS){const on=state.sections[k];h+=`<div class="row ${on?"":"off"}" data-sec="${k}">${sw(on)}<div class="lbl">${esc(l)}<small>${esc(d)}</small></div><span></span></div>`;}
+    h+=`</div>`;
+  } else {
+    h+=`<div class="group"><div class="group-head"><h3>What the config carries</h3></div><ul class="list" style="padding:0 6px"><li><b>signals</b>: which of the 20 are scored, and therefore count as trials</li><li><b>risk_factors</b>: the model the signals are neutralized against</li><li><b>gate</b>: the three thresholds</li><li><b>backtest</b>: profile, construction, costs, tax, income, rebalance, start</li><li><b>report.sections</b>: what the tearsheet shows</li></ul></div>`;
+  }
+  rail.innerHTML=h;
+}
+
+/* ------------------------------------------------------------------ views */
+function renderSignals(){
+  const c=compute();
+  $("#t-n").textContent=c.n;
+  $("#t-go").textContent=c.go.length;
+  $("#t-star").textContent=c.n>1?f2(c.starAnn):"—";
+  $("#t-var").textContent=c.n>1?c.v.toFixed(4):"—";
+  let b="";
+  const offGo=["sue","short_term_reversal"].filter(k=>!state.signals[k]);
+  if(offGo.length)b+=`<div class="banner warn"><span class="k">note</span><span>You have excluded ${offGo.join(" and ")}, which ${offGo.length>1?"are":"is"} the fitted run's GO signal${offGo.length>1?"s":""}. Excluding a signal after seeing it pass is a search; the registry keeps counting it.</span></div>`;
+  if(c.n<20&&c.n>0)b+=`<div class="banner good"><span class="k">effect</span><span>With ${c.n} trials the luck bar (expected max annual Sharpe) is ${f2(c.starAnn)}, against ${f2(0.0386**0.5*((1-G)*nppf(1-1/20)+G*nppf(1-1/(20*Math.E)))*Math.sqrt(12))} at the full 20. ${c.go.length} signal${c.go.length===1?"":"s"} clear at the current thresholds.</span></div>`;
+  if(state.gate.minDsr!==0.95||state.gate.minT!==2.5||state.gate.minRet!==40)b+=`<div class="banner crit"><span class="k">gate moved</span><span>Thresholds differ from the pre-registered rule (t 2.5, retention 40%, DSR 0.95). That is allowed only before the next fitted run, and it should be recorded in the worklog with the reason.</span></div>`;
+  $("#sig-banners").innerHTML=b;
+  let h=`<thead><tr><th></th><th>signal</th><th>family</th><th class="num">resid t</th><th class="num">retained</th><th>DSR (n=${c.n})</th><th class="num"></th><th>verdict</th></tr></thead><tbody>`;
+  for(const r of c.rows){
+    const fails=[];if(!r.signOk)fails.push("sign");if(!r.tOk)fails.push("t");if(!r.rOk)fails.push("retention");if(r.on&&!r.dOk)fails.push("DSR");
+    h+=`<tr class="${r.on?"":"off"}" data-sig="${r.key}"><td>${sw(r.on)}</td><td>${esc(r.label)}${r.exOwn?' <span class="pill info">ex-own</span>':""}</td><td style="color:var(--ink-3)">${FAMILIES[r.family]}</td>`;
+    h+=`<td class="num ${r.tOk?"":"fail-x"}">${f2(r.t)}</td><td class="num ${r.rOk?"":"fail-x"}">${r.ret}%</td>`;
+    h+=`<td><div class="bar"><i class="${r.on?(r.go?"go":(r.dOk?"":"fail")):"fail"}" style="width:${r.on?Math.max(r.dsr*100,1):0}%"></i><b style="left:${state.gate.minDsr*100}%"></b></div></td><td class="num ${r.on&&!r.dOk?"fail-x":""}">${r.on?r.dsr.toFixed(3):"—"}</td>`;
+    h+=`<td>${!r.on?'<span class="pill no">excluded</span>':(r.go?'<span class="pill go">GO</span>':`<span class="pill no">no-go</span> <span style="font-size:11.5px;color:var(--ink-3)">${fails.join(", ")}</span>`)}</td></tr>`;
+  }
+  $("#sig-table").innerHTML=h+"</tbody>";
+}
+function renderFactors(){
+  const off=FACTORS.filter(f=>!state.factors[f.key]);
+  let b="";
+  if(!state.factors.market)b+=`<div class="banner crit"><span class="k">market off</span><span>Without a market column the level of the market has nowhere to live in the fit. On this panel that put the cap-weighted market at 19.9%/yr against a true 11.9%. The go/no-go numbers below would not be valid.</span></div>`;
+  const refit=off.filter(f=>!["momentum","value"].includes(f.key));
+  if(refit.length)b+=`<div class="banner warn"><span class="k">re-fit</span><span>Excluding ${refit.map(f=>f.label).join(", ")} has no precomputed result. The model must be re-fitted and the gate re-run; the Run plan tab lists both.</span></div>`;
+  $("#fac-banners").innerHTML=b;
+  let h=`<thead><tr><th></th><th>factor</th><th>kind</th><th class="num">ann. return</th><th class="num">t</th></tr></thead><tbody>`;
+  for(const f of FACTORS){h+=`<tr class="${state.factors[f.key]?"":"off"}" data-fac="${f.key}"><td>${sw(state.factors[f.key],f.key==="market"?"warnish":"")}</td><td>${esc(f.label)}</td><td style="color:var(--ink-3)">${f.kind}</td><td class="num">${f.ann==null?"constrained":f2(f.ann)+"%"}</td><td class="num">${f.t==null?"":f2(f.t)}</td></tr>`;}
+  $("#fac-table").innerHTML=h+"</tbody>";
+  const c=compute();const sw_=c.rows.filter(r=>r.exOwn);
+  $("#fac-effect").innerHTML=sw_.length?`<b>Currently using ex-own numbers for:</b> ${sw_.map(r=>`${esc(r.label)} (retention ${r.ret}%, t ${f2(r.t)})`).join("; ")}.`:`<b>All sixteen factors in.</b> This is the fitted model; the gate table is the documented one.`;
+}
+const ASSUMPTION_CARDS=[
+ {id:"profile",title:"Risk profile",weak:false,desc:"Four named points on one dial. CAGR peaks at balanced; past it, aggression buys volatility and gives back return through costs and tax.",
+  ctl:()=>seg("profile",["conservative","balanced","aggressive","max_growth"])},
+ {id:"construction",title:"Portfolio construction",weak:false,desc:"Equal weight is kept on purpose: an optimizer handed a made-up covariance is worse than equal weight. The optimizer's trading-cost term is what cuts turnover from 11.6x to 1.2x.",
+  ctl:()=>seg("construction",[["equal","equal weight"],["opt","optimizer"]])},
+ {id:"costs",title:"Trading costs",weak:false,desc:"Half-spread scaled by illiquidity, square-root impact, $0.005 per share commission, 10% participation cap. This is the term that turns the equal-weight run negative.",
+  ctl:()=>tog("costs","charge costs")},
+ {id:"tax",title:"Capital gains tax",weak:true,desc:"Headroom-aware: long-term gains have a 0% band that stacks on ordinary income; short-term gains are ordinary income. Only the 2026 bracket table exists, so every earlier year is taxed at 2026 rules. That is a modelling assumption, not a fact.",
+  ctl:()=>tog("tax","apply tax")+tog("taxAware","tax-aware construction")},
+ {id:"income",title:"Ordinary income",weak:true,desc:"Held at $20,000 for fifty-one years while the portfolio grows to $2.3m. The tax figure is therefore a floor. A realistic income path pays more and shrinks the 0% band.",
+  ctl:()=>`<input type="range" min="0" max="400000" step="5000" data-as="income" value="${state.assumptions.income}"><span class="mono">$${state.assumptions.income.toLocaleString()}</span>`},
+ {id:"rebalance",title:"Rebalance interval",weak:true,desc:"Monthly means almost nothing is held a year, so nearly every gain is short-term and the 0% long-term band is forfeited. The docs name this as the single largest untested lever.",
+  ctl:()=>seg("rebalance",["monthly","quarterly","annual"])},
+ {id:"tradeCostBps",title:"Optimizer's view of trade cost",weak:true,desc:"50 bp round trip, held constant across profiles because it is a claim about spreads, not a preference. The backtest's entire result turns on cost assumptions, and no paper order has filled yet to check it.",
+  ctl:()=>`<input type="range" min="0" max="200" step="5" data-as="tradeCostBps" value="${state.assumptions.tradeCostBps}"><span class="mono">${state.assumptions.tradeCostBps} bp</span>`},
+ {id:"startYear",title:"Sample start",weak:true,desc:"1975 is a choice: the risk model needs a covariance history before it can be used point-in-time. It is not a claim that this is the right sample, and 1970s-80s alpha leans on the Shumway delisting assumption (31% of 1970s delistings filled).",
+  ctl:()=>seg("startYear",[1975,1990,2000,2010])},
+ {id:"composite",title:"Which two signals the backtest holds",weak:true,desc:"scripts/real_backtest.py hard-codes earnings_yield and accruals, the GO pair from the original 3-trial gate. The 20-trial gate admits SUE and short-term reversal instead, and neither backtested signal clears it. The documented 6.31% is therefore a backtest of a pair the current gate rejects.",
+  ctl:()=>seg("composite",[["backtested","earnings_yield + accruals (as run)"],["gate","current gate's GO set"]])},
+];
+function seg(field,opts){return `<span class="seg">${opts.map(o=>{const [v,l]=Array.isArray(o)?o:[o,String(o).replace("_"," ")];return `<button data-as="${field}" data-val="${v}" aria-pressed="${String(state.assumptions[field])===String(v)}">${esc(l)}</button>`;}).join("")}</span>`;}
+function tog(field,label){return `<span class="ctl" style="gap:6px"><span class="sw" role="switch" tabindex="0" aria-checked="${state.assumptions[field]}" data-astog="${field}"></span><span style="font-size:12.5px">${label}</span></span>`;}
+function renderAssumptions(){
+  const a=state.assumptions,run=matchRun(),dev=deviations();
+  const c=compute();
+  let b="";
+  if(a.composite==="gate"){const names=c.go.map(r=>r.label);b+=`<div class="banner warn"><span class="k">needs run</span><span>Backtesting the gate's current GO set (${names.length?names.join(", "):"nothing passes"}) has not been done. The only fitted composite is earnings_yield + accruals.</span></div>`;}
+  else b+=`<div class="banner crit"><span class="k">inconsistency</span><span>The fitted ladder holds earnings_yield + accruals. At 20 trials both fail the gate on Deflated Sharpe (0.086 and 0.009). The headline 6.31% is real arithmetic on a pair the engine's own rule no longer admits.</span></div>`;
+  $("#as-banners").innerHTML=b;
+  let r="";
+  if(run&&!dev.length&&a.composite==="backtested"){
+    r=`<div class="big">${f2(run.cagr)}%<small>CAGR · ${esc(run.name)}</small></div><div class="rowline"><span>vol ${run.vol}%</span><span>Sharpe ${f2(run.sh)}</span><span>max DD ${f2(run.dd,1)}%</span><span>turnover ${run.to}x</span>${run.final?`<span>final $${run.final.toLocaleString()}</span>`:""}${run.beta!=null?`<span>book beta ${f2(run.beta)}</span>`:""}${run.cost?`<span>costs $${run.cost.toLocaleString()}</span><span>tax $${run.taxp.toLocaleString()}</span>`:""}</div>`;
+  } else {
+    const why=[];if(!run)why.push("no fitted run matches profile × construction × costs × tax × tax-aware");if(a.composite==="gate")why.push("composite differs from the fitted pair");why.push(...dev);
+    r=`<div class="big" style="color:var(--ink-3)">—<small>no fitted result for this combination</small></div><ul class="list">${why.map(w=>`<li>${esc(w)}</li>`).join("")}</ul>`;
+  }
+  $("#as-result").innerHTML=r;
+  const p=PROFILES[a.profile];
+  $("#as-profile").innerHTML=Object.entries({...p,trade_cost:"0.005 (held)",score_ic:"0.03 (held)"}).map(([k,v])=>`<dt>${k}</dt><dd class="mono">${v}</dd>`).join("");
+  $("#as-cards").innerHTML=ASSUMPTION_CARDS.map(cd=>`<div class="card"><div class="head"><h2>${cd.title}</h2>${cd.weak?'<span class="pill warn">weak</span>':'<span class="pill info">fitted</span>'}</div><div class="ctl">${cd.ctl()}</div><p class="weak">${cd.desc}</p></div>`).join("");
+}
+function renderSections(){
+  const c=compute(),a=state.assumptions,run=matchRun();
+  const on=k=>state.sections[k];
+  let h=`<h2>Report preview</h2><p class="sub">What a tearsheet built from this selection would contain. Toggle sections in the rail; the content reflects the current signal, factor, and assumption choices.</p><div style="height:14px"></div>`;
+  if(on("pipeline"))h+=`<div class="sec"><div class="eyebrow">Pipeline</div>qe-data → qe-core → qe-signals (${c.n} scored) → qe-risk (${FACTORS.filter(f=>state.factors[f.key]).length} factors) → qe-eval gate → qe-combine → qe-tax + qe-backtest (${a.construction==="opt"?a.profile:"equal weight"}) → qe-live → qe-report</div>`;
+  if(on("invariants"))h+=`<div class="sec"><div class="eyebrow">Invariants</div>PIT contract raises on leak · ledger total equals sum of ${c.go.length} contribution${c.go.length===1?"":"s"} · registry holds ${c.n} residual trials</div>`;
+  if(on("ladder"))h+=`<div class="sec"><div class="eyebrow">Ladder</div>${RUNS.slice(0,5).map(x=>`<div class="mono" style="font-size:12.5px">${x.name.padEnd(36," ")} ${f2(x.cagr).padStart(6," ")}%  ${x.to}x</div>`).join("")}<p class="weak" style="font-size:12px;color:var(--ink-3);margin-top:4px">fitted on earnings_yield + accruals</p></div>`;
+  if(on("profiles"))h+=`<div class="sec"><div class="eyebrow">Risk appetite</div>${RUNS.slice(4).map(x=>`<div class="mono" style="font-size:12.5px">${x.p.padEnd(14," ")} CAGR ${f2(x.cagr)}%  DD ${f2(x.dd,1)}%  beta ${f2(x.beta)}${x.p===a.profile?"  ◀ selected":""}</div>`).join("")}</div>`;
+  if(on("gate"))h+=`<div class="sec"><div class="eyebrow">Gate · thresholds t ${state.gate.minT} · retention ${state.gate.minRet}% · DSR ${state.gate.minDsr}</div>${c.go.length?c.go.map(r=>`<span class="pill go" style="margin:2px 4px 2px 0">${esc(r.label)}</span>`).join(""):"<span class='pill crit'>nothing passes</span>"}<span style="font-size:12.5px;color:var(--ink-3);margin-left:8px">${c.n-c.go.length} no-go of ${c.n}</span></div>`;
+  if(on("pit"))h+=`<div class="sec"><div class="eyebrow">PIT-broken check</div><span class="mono" style="font-size:12.5px">earnings yield 1.50% → 4.35%/mo · accruals −0.54% → −0.05%/mo</span></div>`;
+  if(on("riskmodel"))h+=`<div class="sec"><div class="eyebrow">Risk model</div><span class="mono" style="font-size:12.5px">${FACTORS.filter(f=>state.factors[f.key]).map(f=>f.label).join(" · ")}</span>${state.factors.market?"":" <span class='pill crit'>market missing</span>"}</div>`;
+  if(on("status"))h+=`<div class="sec"><div class="eyebrow">Status</div>${run&&!deviations().length&&a.composite==="backtested"?"fitted result available":"this configuration needs a run"} · paper fills unchecked · EDGAR Form 4 / 13F not started</div>`;
+  if(!SECTIONS.some(s=>on(s[0])))h+=`<p class="weak">No sections selected.</p>`;
+  $("#preview").innerHTML=h;
+}
+function buildConfig(){
+  const c=compute(),a=state.assumptions;
+  return {
+    name:"explorer-selection",
+    generated:new Date().toISOString().slice(0,10),
+    signals:{scored:SIGNALS.filter(s=>state.signals[s.key]).map(s=>s.key),excluded:SIGNALS.filter(s=>!state.signals[s.key]).map(s=>s.key)},
+    risk_factors:FACTORS.filter(f=>state.factors[f.key]).map(f=>f.key),
+    gate:{min_t:state.gate.minT,min_retention:state.gate.minRet/100,min_dsr:state.gate.minDsr,n_trials:c.n},
+    composite:a.composite==="gate"?c.go.map(r=>r.key):BACKTESTED,
+    backtest:{risk_profile:a.profile,construction:a.construction==="opt"?"optimizer":"equal_weight",costs:a.costs,tax:a.tax,tax_aware:a.taxAware,ordinary_income:a.income,rebalance:a.rebalance,trade_cost_bps:a.tradeCostBps,start_year:a.startYear},
+    report:{sections:SECTIONS.filter(s=>state.sections[s[0]]).map(s=>s[0])},
+  };
+}
+function renderPlan(){
+  const cfg=buildConfig(),a=state.assumptions,dev=deviations();
+  const refit=FACTORS.filter(f=>!state.factors[f.key]).length>0;
+  const cmds=[];
+  if(refit)cmds.push("# risk model changed → refit first\nuv run python scripts/fit_risk_model.py");
+  cmds.push("# gate: signals and thresholds come from the script's SIGNALS tuple and MIN_* constants today\nuv run python scripts/go_no_go.py");
+  if(a.construction==="opt")cmds.push(`uv run python scripts/real_backtest.py --risk-profile ${a.profile}`);
+  else cmds.push("# equal-weight rungs are part of real_backtest.py's ladder\nuv run python scripts/real_backtest.py");
+  cmds.push("uv run python scripts/sweep_risk_appetite.py --profiles "+["conservative","balanced","aggressive","max_growth"].join(" "));
+  $("#plan-cmds").textContent=cmds.join("\n\n");
+  const needs=[];
+  if(a.composite==="gate")needs.push("a backtest of the current GO set rather than earnings_yield + accruals (edit GO_SIGNALS in real_backtest.py)");
+  needs.push(...dev.map(d=>"a run with "+d));
+  if(refit)needs.push("a refitted risk model without "+FACTORS.filter(f=>!state.factors[f.key]).map(f=>f.label).join(", "));
+  if(state.gate.minDsr!==0.95||state.gate.minT!==2.5||state.gate.minRet!==40)needs.push("MIN_T / MIN_RETENTION / MIN_DSR edited in go_no_go.py before the run, with a worklog entry");
+  $("#plan-needs").innerHTML=needs.length?`<b>Code or runs this selection needs:</b><ul class="list">${needs.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:`<b>Nothing new to run.</b> This selection is the fitted configuration; its results are in docs/.`;
+  $("#plan-json").value=JSON.stringify(cfg,null,2);
+}
+function renderCounts(){
+  $("#n-signals").textContent=SIGNALS.filter(s=>state.signals[s.key]).length+"/20";
+  $("#n-factors").textContent=FACTORS.filter(f=>state.factors[f.key]).length+"/16";
+  $("#n-assump").textContent=(deviations().length+(state.assumptions.composite==="gate"?1:0))+" changed";
+  $("#n-sections").textContent=SECTIONS.filter(s=>state.sections[s[0]]).length+"/8";
+}
+function renderAll(){
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.view===state.view));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.dataset.view===state.view));
+  renderRail();renderCounts();
+  ({signals:renderSignals,factors:renderFactors,assumptions:renderAssumptions,sections:renderSections,plan:renderPlan})[state.view]();
+  save();
+}
+
+/* ------------------------------------------------------------------ events */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-view],[data-sig] .sw,[data-fac] .sw,[data-sec] .sw,[data-fam],[data-fkind],[data-seckind],[data-as],[data-astog],#reset,#copy");
+  if(!t)return;
+  if(t.dataset.view){state.view=t.dataset.view;renderAll();return;}
+  if(t.id==="reset"){const v=state.view;state=defaults();state.view=v;renderAll();toast("Reset to the shipped configuration");return;}
+  if(t.id==="copy"){const txt=JSON.stringify(buildConfig(),null,2);(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Config copied"),()=>{state.view="plan";renderAll();toast("Clipboard blocked; copy from the Run plan tab");});return;}
+  const row=t.closest("[data-sig],[data-fac],[data-sec]");
+  if(t.classList.contains("sw")&&row){
+    if(row.dataset.sig){state.signals[row.dataset.sig]=!state.signals[row.dataset.sig];}
+    else if(row.dataset.fac){state.factors[row.dataset.fac]=!state.factors[row.dataset.fac];}
+    else if(row.dataset.sec){state.sections[row.dataset.sec]=!state.sections[row.dataset.sec];}
+    renderAll();return;
+  }
+  if(t.dataset.fam){SIGNALS.filter(s=>s.family===t.dataset.fam).forEach(s=>state.signals[s.key]=t.dataset.set==="1");renderAll();return;}
+  if(t.dataset.fkind){FACTORS.filter(f=>f.kind===t.dataset.fkind).forEach(f=>state.factors[f.key]=t.dataset.set==="1");renderAll();return;}
+  if(t.dataset.seckind){SECTIONS.forEach(s=>state.sections[s[0]]=t.dataset.set==="1");renderAll();return;}
+  if(t.dataset.astog){state.assumptions[t.dataset.astog]=!state.assumptions[t.dataset.astog];renderAll();return;}
+  if(t.dataset.as&&t.dataset.val!==undefined){const f=t.dataset.as;let v=t.dataset.val;if(f==="startYear")v=+v;state.assumptions[f]=v;renderAll();return;}
+});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("sw")){e.preventDefault();e.target.click();}});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.gate){const v=parseFloat(t.value);if(!isNaN(v)){state.gate[t.dataset.gate]=v;renderCounts();renderSignals();save();}return;}
+  if(t.dataset.as){state.assumptions[t.dataset.as]=+t.value;const lbl=t.nextElementSibling;if(lbl)lbl.textContent=t.dataset.as==="income"?"$"+(+t.value).toLocaleString():t.value+" bp";renderCounts();save();}
+});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset.as&&t.type==="range"){renderAll();}});
+const h=(location.hash||"").slice(1);if(["signals","factors","assumptions","sections","plan"].includes(h))state.view=h;
+renderAll();
+})();
+</script>
+
+</body></html>

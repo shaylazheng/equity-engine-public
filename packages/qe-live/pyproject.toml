@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qe-live"
+version = "0.1.0"
+description = "Daily run: scores to target portfolio to trade list"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "pandas>=2.2",
+    "qe-core",
+    "qe-signals",
+    "qe-combine",
+    "qe-backtest",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qe_live"]
+
+[tool.uv.sources]
+qe-core = { workspace = true }
+qe-signals = { workspace = true }
+qe-combine = { workspace = true }
+qe-backtest = { workspace = true }

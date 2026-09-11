@@ -1,0 +1,8 @@
+# `balanced` plus a +3.0%/yr beta premium — the max_growth tilt without the
+# max_growth concentration.
+risk_aversion: 8.0
+max_weight: 0.06
+max_active_share: 0.60
+universe_size: 200
+n_positions: 40
+beta_premium_annual: 0.030

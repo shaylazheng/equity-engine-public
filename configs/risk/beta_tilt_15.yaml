@@ -1,0 +1,9 @@
+# `balanced` in every respect except a deliberate +1.5%/yr beta premium.
+# Exists to separate the two things `aggressive` changes at once: concentration
+# and market-risk tilt. Same lambda, same caps, same universe as balanced.
+risk_aversion: 8.0
+max_weight: 0.06
+max_active_share: 0.60
+universe_size: 200
+n_positions: 40
+beta_premium_annual: 0.015

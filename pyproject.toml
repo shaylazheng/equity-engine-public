@@ -1,0 +1,67 @@
+[project]
+name = "equity-engine"
+version = "0.1.0"
+description = "Daily-frequency, long-only, tax-aware US equity alpha engine (F5)"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"  # pandas 2.2.x segfaults on 3.14 (Timestamp + DateOffset)
+license = { text = "MIT" }
+authors = [{ name = "Shayla Zheng" }]
+dependencies = [
+    "qe-core",
+    "qe-data",
+    "qe-eval",
+    "qe-tax",
+    "qe-risk",
+    "qe-signals",
+    "qe-combine",
+    "qe-backtest",
+    "qe-live",
+    "qe-report",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+qe-core = { workspace = true }
+qe-data = { workspace = true }
+qe-eval = { workspace = true }
+qe-tax = { workspace = true }
+qe-risk = { workspace = true }
+qe-signals = { workspace = true }
+qe-combine = { workspace = true }
+qe-backtest = { workspace = true }
+qe-live = { workspace = true }
+qe-report = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    # Reference implementations, used only to check our numerics against a
+    # known-good one. Not a runtime dependency of any package.
+    "statsmodels>=0.14",
+]
+
+[tool.pytest.ini_options]
+# `packages` is listed alongside `tests` deliberately. Tests live in the root
+# `tests/` directory by convention, but with `testpaths = ["tests"]` alone a file
+# written under `packages/<pkg>/tests/` is not collected and not reported --
+# it just silently never runs, which is worse than a failure. Listing both means
+# a misplaced test still executes.
+testpaths = ["tests", "packages"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
+# Diagnostic probes deliberately catch broadly: a spike that aborts on the first
+# unavailable table tells you far less than one that maps what is and is not
+# there. Reporting the failure *is* the output.
+"scripts/spike_*.py" = ["BLE001"]

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qe-eval"
+version = "0.1.0"
+description = "Statistics, purged cross-validation, the trial registry, and multiple-testing control"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.13",
+    "qe-core",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qe_eval"]
+
+[tool.uv.sources]
+qe-core = { workspace = true }

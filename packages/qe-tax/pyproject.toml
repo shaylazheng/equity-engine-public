@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qe-tax"
+version = "0.1.0"
+description = "Personalized, headroom-aware capital gains tax model"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyyaml>=6.0",
+    "qe-core",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qe_tax"]
+
+[tool.uv.sources]
+qe-core = { workspace = true }
